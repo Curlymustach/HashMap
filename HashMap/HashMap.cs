@@ -29,26 +29,32 @@ namespace HashMap
 
         public ICollection<TValue> Values => throw new NotImplementedException();
 
-        public int Count => throw new NotImplementedException();
+        public int Count { get; private set; }
 
         public bool IsReadOnly => false;
 
         public void Add(TKey key, TValue value)
         {
-
             //int hash = key.GetHashCode();
             int hash = comparer.GetHashCode(key);
-            int index = hash % 10;
-
+            int index = hash % buckets.Length;
+            if (ContainsKey(key))
+            {
+                throw new Exception();
+            }
+            else if(buckets[index] == null)
+            {
+               LinkedList<KeyValuePair<TKey, TValue>> newList = new LinkedList<KeyValuePair<TKey, TValue>>();
+               buckets[index] = newList;
+            }
             buckets[index].AddFirst(new KeyValuePair<TKey, TValue>(key, value));
-            //if(comparer.Equals(key, linkedListKey))
 
-            throw new NotImplementedException();
+            //if(comparer.Equals(key, linkedListKey))
         }
 
         public void Add(KeyValuePair<TKey, TValue> item)
         {
-            throw new NotImplementedException();
+            Add(item.Key, item.Value);
         }
 
         public void Clear()
@@ -58,13 +64,52 @@ namespace HashMap
 
         public bool Contains(KeyValuePair<TKey, TValue> item)
         {
-            throw new NotImplementedException();
+            ContainsKey(item.Key);
+            return false;
+
         }
 
         public bool ContainsKey(TKey key)
         {
-            throw new NotImplementedException();
+            int index = comparer.GetHashCode(key) % buckets.Length;
+            if (buckets[index] == null)
+            {
+                return false;
+            }
+
+            foreach (var pair in buckets[index])
+            {
+                if (comparer.Equals(pair.Key, key))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
+
+        public void Remove(TKey key, TValue value)
+        {
+            int index = comparer.GetHashCode(key) % buckets.Length;
+            foreach (var pair in buckets[index])
+            {
+                if (comparer.Equals(pair.Key, key))
+                {
+                    
+                }
+            }
+        }
+
+        public void Rehash()
+        {
+
+        }
+
+
+
+
+
+
+
 
         //Optional
         public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
