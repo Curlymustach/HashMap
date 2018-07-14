@@ -12,6 +12,11 @@ namespace HashMap
         LinkedList<KeyValuePair<TKey, TValue>>[] buckets;
         IEqualityComparer<TKey> comparer;
 
+        public HashMap(int length)
+        {
+            buckets = new LinkedList<KeyValuePair<TKey, TValue>>[length];
+        }
+
         public TValue this[TKey key]
         {
             get
@@ -36,7 +41,8 @@ namespace HashMap
         public void Add(TKey key, TValue value)
         {
             //int hash = key.GetHashCode();
-            int hash = comparer.GetHashCode(key);
+            //if(comparer.Equals(key, linkedListKey))
+            int hash = key.GetHashCode();
             int index = hash % buckets.Length;
             if (ContainsKey(key))
             {
@@ -44,12 +50,15 @@ namespace HashMap
             }
             else if(buckets[index] == null)
             {
-               LinkedList<KeyValuePair<TKey, TValue>> newList = new LinkedList<KeyValuePair<TKey, TValue>>();
-               buckets[index] = newList;
+                buckets[index] = new LinkedList<KeyValuePair<TKey, TValue>>();
             }
             buckets[index].AddFirst(new KeyValuePair<TKey, TValue>(key, value));
+            Count++;
 
-            //if(comparer.Equals(key, linkedListKey))
+            if(Count == buckets.Length)
+            {
+                Rehash(buckets.Length * 2);
+            }
         }
 
         public void Add(KeyValuePair<TKey, TValue> item)
@@ -71,7 +80,7 @@ namespace HashMap
 
         public bool ContainsKey(TKey key)
         {
-            int index = comparer.GetHashCode(key) % buckets.Length;
+            int index = key.GetHashCode() % buckets.Length;
             if (buckets[index] == null)
             {
                 return false;
@@ -79,7 +88,7 @@ namespace HashMap
 
             foreach (var pair in buckets[index])
             {
-                if (comparer.Equals(pair.Key, key))
+                if (pair.Key.Equals(key))
                 {
                     return true;
                 }
@@ -87,29 +96,55 @@ namespace HashMap
             return false;
         }
 
-        public void Remove(TKey key, TValue value)
+
+        public bool Remove(TKey key)
         {
-            int index = comparer.GetHashCode(key) % buckets.Length;
+            int index = key.GetHashCode() % buckets.Length;
             foreach (var pair in buckets[index])
             {
-                if (comparer.Equals(pair.Key, key))
+                if (pair.Key.Equals(key))
                 {
-                    
+                    Count--;
+                    return buckets[index].Remove(pair);
                 }
             }
+            
+            return false;
+            
         }
 
-        public void Rehash()
+        public bool Remove(KeyValuePair<TKey, TValue> item)
         {
-
+            int index = item.Key.GetHashCode() % buckets.Length;
+            if (buckets[index].Remove(item))
+            {
+                Count--;
+                return true;
+            }
+            return false;            
         }
 
+        private void Rehash(int capacity)
+        {
+            LinkedList<KeyValuePair<TKey, TValue>>[] temp = new LinkedList<KeyValuePair<TKey, TValue>>[capacity];
+            for (int i = 0; i < buckets.Length; i++)
+            {
+                if (buckets[i] != null)
+                {
+                    foreach (var pair in buckets[i])
+                    {
+                        int index = pair.Key.GetHashCode() % temp.Length;
+                        if (temp[index] == null)
+                        {
+                            temp[index] = new LinkedList<KeyValuePair<TKey, TValue>>();
+                        }
+                        temp[index].AddFirst(pair);
 
-
-
-
-
-
+                    }
+                }
+            }
+            buckets = temp;
+        }
 
         //Optional
         public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
@@ -117,15 +152,6 @@ namespace HashMap
             throw new NotImplementedException();
         }
 
-        public bool Remove(TKey key)
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool Remove(KeyValuePair<TKey, TValue> item)
-        {
-            throw new NotImplementedException();
-        }
 
         //Save for end
         public bool TryGetValue(TKey key, out TValue value)
