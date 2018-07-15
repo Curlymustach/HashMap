@@ -10,15 +10,35 @@ namespace HashMap
     {
         static void Main(string[] args)
         {
+            // head, addFirst
+
+            MyList<int> numbers = new MyList<int>();
+
+            numbers.AddLast(1);
+            numbers.AddLast(2);
+            numbers.AddLast(3);
+
+            //foreach(var num in numbers)
+            //{
+            //    Console.WriteLine(num);
+            //}
+
+
             HashMap<int, int> map = new HashMap<int, int>(4);
-            for(int i = 1; i <= 5; i++)
+            for (int i = 1; i <= 5; i++)
             {
                 map.Add(i, i);
             }
-            map.Add(12, 12);
-            map.Add(13, 13);
-            map.Add(14, 14);
-            map.Remove(12);
+
+            //foreach and print
+            foreach (var pair in map)
+            {
+                Console.WriteLine(pair);
+            }
+
+            map.Clear();
+
+            Console.ReadKey();
         }
     }
 }

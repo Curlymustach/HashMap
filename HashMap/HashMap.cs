@@ -9,23 +9,56 @@ namespace HashMap
 {
     class HashMap<TKey, TValue> : IDictionary<TKey, TValue>
     {
+        private const int defaultCapacity = 10;
         LinkedList<KeyValuePair<TKey, TValue>>[] buckets;
         IEqualityComparer<TKey> comparer;
 
-        public HashMap(int length)
+        //constructors
+        public HashMap() : this(defaultCapacity, null) { }
+        public HashMap(int capacity) : this(capacity, null) { }
+        public HashMap(IEqualityComparer<TKey> comparer) : this(defaultCapacity, comparer) { }
+        public HashMap(int capacity, IEqualityComparer<TKey> comparer)
         {
-            buckets = new LinkedList<KeyValuePair<TKey, TValue>>[length];
+            this.comparer = comparer ?? EqualityComparer<TKey>.Default;
+            buckets = new LinkedList<KeyValuePair<TKey, TValue>>[capacity];
         }
 
         public TValue this[TKey key]
         {
             get
             {
-                throw new NotImplementedException();
+                if (ContainsKey(key))
+                {
+                    int index = comparer.GetHashCode(key) % buckets.Length;
+                    foreach (var pair in buckets[index])
+                    {
+                        if (comparer.Equals(key, pair.Key))
+                        {
+                            return pair.Value;
+                        }
+                    }
+                }
+
+                throw new KeyNotFoundException();
             }
             set
             {
-                throw new NotImplementedException();
+                if (ContainsKey(key))
+                {
+                    int index = comparer.GetHashCode(key) % buckets.Length;
+                    foreach (var pair in buckets[index])
+                    {
+                        if (comparer.Equals(key, pair.Key))
+                        {
+                            buckets[index].Remove(pair);
+                            buckets[index].AddFirst(new KeyValuePair<TKey, TValue>(key, value));
+                        }
+                    }
+                }
+                else
+                {
+                    Add(key, value);
+                }
             }
         }
 
@@ -40,22 +73,22 @@ namespace HashMap
 
         public void Add(TKey key, TValue value)
         {
-            //int hash = key.GetHashCode();
-            //if(comparer.Equals(key, linkedListKey))
-            int hash = key.GetHashCode();
-            int index = hash % buckets.Length;
             if (ContainsKey(key))
             {
                 throw new Exception();
             }
-            else if(buckets[index] == null)
+
+            int hash = comparer.GetHashCode(key); //key.GetHashCode();
+            int index = hash % buckets.Length;
+
+            if (buckets[index] == null)
             {
                 buckets[index] = new LinkedList<KeyValuePair<TKey, TValue>>();
             }
             buckets[index].AddFirst(new KeyValuePair<TKey, TValue>(key, value));
             Count++;
 
-            if(Count == buckets.Length)
+            if (Count == buckets.Length)
             {
                 Rehash(buckets.Length * 2);
             }
@@ -68,19 +101,21 @@ namespace HashMap
 
         public void Clear()
         {
-            throw new NotImplementedException();
+            if (Count > 0)
+            {
+                Array.Clear(buckets, 0, buckets.Length);
+            }
+            Count = 0;
         }
 
         public bool Contains(KeyValuePair<TKey, TValue> item)
         {
-            ContainsKey(item.Key);
-            return false;
-
+            return ContainsKey(item.Key);
         }
 
         public bool ContainsKey(TKey key)
         {
-            int index = key.GetHashCode() % buckets.Length;
+            int index = comparer.GetHashCode(key) % buckets.Length;
             if (buckets[index] == null)
             {
                 return false;
@@ -88,7 +123,7 @@ namespace HashMap
 
             foreach (var pair in buckets[index])
             {
-                if (pair.Key.Equals(key))
+                if (comparer.Equals(key, pair.Key))
                 {
                     return true;
                 }
@@ -99,47 +134,45 @@ namespace HashMap
 
         public bool Remove(TKey key)
         {
-            int index = key.GetHashCode() % buckets.Length;
+            int index = comparer.GetHashCode(key) % buckets.Length;
             foreach (var pair in buckets[index])
             {
-                if (pair.Key.Equals(key))
+                if (comparer.Equals(key, pair.Key))
                 {
                     Count--;
                     return buckets[index].Remove(pair);
                 }
             }
-            
+
             return false;
-            
         }
 
         public bool Remove(KeyValuePair<TKey, TValue> item)
         {
-            int index = item.Key.GetHashCode() % buckets.Length;
+            int index = comparer.GetHashCode(item.Key) % buckets.Length;
             if (buckets[index].Remove(item))
             {
                 Count--;
                 return true;
             }
-            return false;            
+            return false;
         }
 
         private void Rehash(int capacity)
         {
-            LinkedList<KeyValuePair<TKey, TValue>>[] temp = new LinkedList<KeyValuePair<TKey, TValue>>[capacity];
+            var temp = new LinkedList<KeyValuePair<TKey, TValue>>[capacity];
             for (int i = 0; i < buckets.Length; i++)
             {
                 if (buckets[i] != null)
                 {
                     foreach (var pair in buckets[i])
                     {
-                        int index = pair.Key.GetHashCode() % temp.Length;
+                        int index = comparer.GetHashCode(pair.Key) % temp.Length;
                         if (temp[index] == null)
                         {
                             temp[index] = new LinkedList<KeyValuePair<TKey, TValue>>();
                         }
                         temp[index].AddFirst(pair);
-
                     }
                 }
             }
@@ -149,11 +182,12 @@ namespace HashMap
         //Optional
         public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
         {
+            //bounds checking
+
             throw new NotImplementedException();
         }
 
-
-        //Save for end
+        //Optional
         public bool TryGetValue(TKey key, out TValue value)
         {
             throw new NotImplementedException();
@@ -162,12 +196,25 @@ namespace HashMap
         //It's own lesson:
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
         {
-            throw new NotImplementedException();
+            //go through each Key Value Pair and yeild return each one
+            for(int i = 0; i < buckets.Length; i++)
+            {
+                if(buckets[i] != null)
+                {
+                    foreach (var pair in buckets[i])
+                    {
+                        yield return pair;
+                    }
+
+                }
+                
+            }
+
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            throw new NotImplementedException();
+            return GetEnumerator();
         }
     }
 }
